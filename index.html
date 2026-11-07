@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>water.wtf — Community Configs</title>
+<style>
+  :root{--abyss:#030a12;--deep:#0a2233;--line:#154056;--foam:#e6f4f8;--mist:#8fb4c4;--faint:#4f6f7d;--aqua:#34cfe0;--aqua-deep:#1b8fa6;--kelp:#44e0b2;--coral:#ff6a7f;color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(900px 500px at 50% -10%,#0c2f44,transparent 60%),linear-gradient(180deg,#061826,#030a12 60%,#02070c);color:var(--foam);font:15px/1.5 system-ui,sans-serif;min-height:100vh}
+  .wrap{max-width:860px;margin:0 auto;padding:0 18px}
+  header{border-bottom:1px solid var(--line);background:rgba(5,20,32,.7);backdrop-filter:blur(10px);position:sticky;top:0;z-index:5}
+  .bar{display:flex;align-items:center;gap:10px;height:62px}
+  .brand{font-weight:800;font-size:1.1rem;letter-spacing:-.02em}
+  .brand b{color:var(--aqua)}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--aqua);box-shadow:0 0 12px var(--aqua);margin-right:8px;vertical-align:middle}
+  h1{font-size:1.9rem;letter-spacing:-.02em;margin:34px 0 6px}
+  .sub{color:var(--mist);margin:0 0 26px}
+  .panel{background:linear-gradient(180deg,#0a2233,#061826);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:28px}
+  label{display:block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mist);margin:14px 0 6px}
+  input,textarea{width:100%;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:10px;color:var(--foam);padding:11px 13px;font:inherit}
+  textarea{min-height:88px;font-family:ui-monospace,monospace;font-size:.84rem;resize:vertical}
+  .btn{margin-top:16px;font-weight:700;border:none;border-radius:10px;padding:11px 20px;cursor:pointer;background:linear-gradient(180deg,#43d9e8,var(--aqua-deep));color:#02141a}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .msg{margin-top:12px;font-size:.9rem;min-height:1.2em}
+  .msg.ok{color:var(--kelp)}.msg.err{color:var(--coral)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:620px){.grid{grid-template-columns:1fr}}
+  .cfg{background:linear-gradient(180deg,#0a2233,#061826);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .cfg h3{margin:0;font-size:1.05rem}
+  .cfg .by{color:var(--mist);font-size:.78rem;margin:3px 0 8px}
+  .cfg p{color:var(--mist);font-size:.9rem;margin:0 0 10px}
+  .cfg code{display:block;font-family:ui-monospace,monospace;font-size:.76rem;color:var(--mist);background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:8px 10px;max-height:66px;overflow:auto;word-break:break-all;white-space:pre-wrap}
+  .cfg .foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+  .cfg .dl{color:var(--faint);font-size:.74rem}
+  .copy{font-size:.8rem;font-weight:700;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--foam);border-radius:8px;padding:6px 12px;cursor:pointer}
+  .copy:hover{border-color:var(--aqua)}
+  .empty{color:var(--faint);text-align:center;padding:36px;border:1px dashed var(--line);border-radius:14px;grid-column:1/-1}
+  footer{color:var(--faint);font-size:.8rem;border-top:1px solid var(--line);margin-top:40px;padding:26px 0}
+</style>
+</head>
+<body>
+<header><div class="wrap bar"><span class="brand"><span class="dot"></span>water<b>.wtf</b> Community</span></div></header>
+<main class="wrap">
+  <h1>Community configs</h1>
+  <p class="sub">Browse configs shared by the community, or submit your own. Approved entries show up in the client's Community tab.</p>
+
+  <div class="panel">
+    <strong>Submit a config</strong>
+    <div class="grid">
+      <div><label for="name">Name</label><input id="name" maxlength="48" placeholder="Crystal PvP — ranked"></div>
+      <div><label for="author">Author</label><input id="author" maxlength="32" placeholder="your handle"></div>
+    </div>
+    <label for="desc">Description</label><input id="desc" maxlength="160" placeholder="What is this setup for?">
+    <label for="code">Share code (UM1-…) or config JSON</label>
+    <textarea id="code" placeholder="Paste your water.wtf share code or exported config"></textarea>
+    <button class="btn" id="submit">Submit for review</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <h2 style="margin:0 0 14px">Approved configs</h2>
+  <div class="grid" id="list"><div class="empty">Loading…</div></div>
+</main>
+<footer class="wrap">water.wtf community feed · submissions are reviewed before they appear.</footer>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const esc = s => (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  async function load() {
+    const list = $('list');
+    try {
+      const r = await fetch('/configs?limit=200');
+      const data = await r.json();
+      if (!Array.isArray(data) || !data.length) { list.innerHTML = '<div class="empty">No configs yet. Be the first to submit.</div>'; return; }
+      list.innerHTML = '';
+      for (const c of data) {
+        const el = document.createElement('div'); el.className = 'cfg';
+        el.innerHTML =
+          '<h3></h3><div class="by"></div><p></p><code></code>' +
+          '<div class="foot"><span class="dl"></span><button class="copy">Copy code</button></div>';
+        el.querySelector('h3').textContent = c.name || 'Untitled';
+        el.querySelector('.by').textContent = 'by ' + (c.author || 'anon');
+        el.querySelector('p').textContent = c.desc || '';
+        el.querySelector('code').textContent = c.code || '';
+        el.querySelector('.dl').textContent = (c.downloads || 0) + ' downloads';
+        el.querySelector('.copy').addEventListener('click', () => {
+          navigator.clipboard.writeText(c.code || '').then(() => {}, () => {});
+          fetch('/configs/' + encodeURIComponent(c.id) + '/download', { method: 'POST' }).catch(() => {});
+          el.querySelector('.copy').textContent = 'Copied';
+          setTimeout(() => el.querySelector('.copy').textContent = 'Copy code', 1200);
+        });
+        list.appendChild(el);
+      }
+    } catch (e) { list.innerHTML = '<div class="empty">Could not reach the feed.</div>'; }
+  }
+
+  $('submit').addEventListener('click', async () => {
+    const btn = $('submit'), msg = $('msg');
+    const body = { name: $('name').value.trim(), author: $('author').value.trim(), desc: $('desc').value.trim(), code: $('code').value.trim() };
+    btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Submitting…';
+    try {
+      const r = await fetch('/configs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const j = await r.json();
+      if (r.ok) { msg.className = 'msg ok'; msg.textContent = j.status === 'approved' ? 'Published!' : 'Submitted — pending review.'; ['name','author','desc','code'].forEach(id => $(id).value = ''); load(); }
+      else { msg.className = 'msg err'; msg.textContent = j.error || 'Submission failed.'; }
+    } catch (e) { msg.className = 'msg err'; msg.textContent = 'Could not submit.'; }
+    btn.disabled = false;
+  });
+
+  load();
+</script>
+</body>
+</html>
